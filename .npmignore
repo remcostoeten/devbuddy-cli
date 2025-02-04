@@ -1,0 +1,15 @@
+src/
+tests/
+scripts/
+.github/
+.vscode/
+.idea/
+.git/
+.gitignore
+.eslintrc*
+.prettierrc*
+tsconfig.json
+*.log
+coverage/
+node_modules/
+

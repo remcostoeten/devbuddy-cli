@@ -1,36 +1,65 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# DevBuddy CLI
 
-## Getting Started
+A modern, scalable CLI toolbox for developers that helps streamline common development tasks.
 
-First, run the development server:
+## Features
+
+- 🚀 Interactive UI Component Management
+- 📦 Next.js Package Installation Helper
+- 🗄️ Turso Database Manager
+- 🔧 More tools coming soon!
+
+## Installation
 
 ```bash
-npm run dev
+npm install -g @devbuddy/cli
 # or
-yarn dev
+pnpm add -g @devbuddy/cli
 # or
-pnpm dev
-# or
-bun dev
+yarn global add @devbuddy/cli
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Usage
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Run the CLI in interactive mode:
+```bash
+devbuddy
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Or use specific commands:
+```bash
+devbuddy help                # Show help menu
+devbuddy interactive        # Start interactive mode
+devbuddy turso-db-manager  # Manage Turso databases
+```
 
-## Learn More
+### Turso Database Manager
 
-To learn more about Next.js, take a look at the following resources:
+The Turso DB manager helps you quickly create and manage Turso databases. Features include:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+- Create new Turso databases with a single command
+- Automatically generate and manage authentication tokens
+- Update .env files with database credentials
+- Backup old credentials when updating .env files
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Requirements:
+- Turso CLI installed (`brew install tursodatabase/tap/turso`)
+- Authenticated with Turso (`turso auth login`)
 
-## Deploy on Vercel
+## Requirements
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+- Node.js >= 18
+- Git (for some features)
+- Turso CLI (for database features)
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Contributing
+
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add some amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+## License
+
+MIT
