@@ -5,6 +5,8 @@ import argparse
 import os
 import sys
 import platform
+import json
+import uuid
 
 def check_turso_cli():
     """Check if Turso CLI is installed."""
@@ -82,6 +84,7 @@ def run_command(command):
     return result.stdout.strip(), result.stderr.strip(), result.returncode
 
 def update_env_file(file_path, new_vars):
+    """Update or create an environment file with new variables."""
     if not os.path.exists(file_path):
         print(f"File {file_path} does not exist. Creating new file.")
         with open(file_path, 'w') as f:
@@ -128,6 +131,90 @@ def find_project_root():
             return None
         current_dir = parent
 
+class ConfigManager:
+    """Manage configuration for database creation and environment setup."""
+    
+    CONFIG_FILE = 'turso_config.json'
+    
+    @classmethod
+    def load_config(cls):
+        """Load configuration from JSON file."""
+        try:
+            if os.path.exists(cls.CONFIG_FILE):
+                with open(cls.CONFIG_FILE, 'r') as f:
+                    return json.load(f)
+        except (json.JSONDecodeError, IOError):
+            pass
+        return {}
+    
+    @classmethod
+    def save_config(cls, config):
+        """Save configuration to JSON file."""
+        with open(cls.CONFIG_FILE, 'w') as f:
+            json.dump(config, f, indent=4)
+    
+    @classmethod
+    def get_default_database_name(cls):
+        """Generate or retrieve a default database name."""
+        config = cls.load_config()
+        
+        # If a default name exists in config, use it
+        if config.get('default_database_name'):
+            return config['default_database_name']
+        
+        # Generate a unique database name
+        return f"db_{uuid.uuid4().hex[:8]}"    """Manage configuration for database creation and environment setup."""
+    
+    CONFIG_FILE = 'turso_config.json'
+    
+    @classmethod
+    def load_config(cls):
+        """Load configuration from JSON file."""
+        try:
+            if os.path.exists(cls.CONFIG_FILE):
+                with open(cls.CONFIG_FILE, 'r') as f:
+                    return json.load(f)
+        except (json.JSONDecodeError, IOError):
+            return {}
+    
+    @classmethod
+    def save_config(cls, config):
+        """Save configuration to JSON file."""
+        with open(cls.CONFIG_FILE, 'w') as f:
+            json.dump(config, f, indent=4)
+    
+    @classmethod
+    def get_default_database_name(cls):
+        """Generate or retrieve a default database name."""
+        config = cls.load_config()
+        
+        # If a default name exists in config, use it
+        if config.get('default_database_name'):
+            return config['default_database_name']
+        
+        # Generate a unique database name
+        return f"db_{uuid.uuid4().hex[:8]}"
+
+def get_clipboard_handler():
+    """
+    Get a clipboard handler that works across different platforms.
+    Prioritizes platform-specific methods for better reliability.
+    """
+    os_type = platform.system().lower()
+    
+    if os_type == 'darwin':  # macOS
+        def mac_clipboard(text):
+            subprocess.run(['pbcopy'], input=text.encode('utf-8'), check=True)
+        return mac_clipboard
+    
+    elif os_type == 'windows':
+        def win_clipboard(text):
+            subprocess.run(['clip'], input=text.encode('utf-8'), check=True)
+        return win_clipboard
+    
+    else:  # Linux and others, fallback to pyperclip
+        return pyperclip.copy
+
 def main():
     # Check for Turso CLI installation
     if not check_turso_cli():
@@ -151,38 +238,29 @@ def main():
     # Set up argument parser
     parser = argparse.ArgumentParser(description='Generate Turso DB credentials and update .env file.')
     parser.add_argument('--overwrite', metavar='PATH', help='Path to .env or .env.local file to overwrite')
+    parser.add_argument('--name', help='Specify a custom database name')
     args = parser.parse_args()
 
-    # Find the project root directory
-    project_root = find_project_root()
-    if not project_root:
-        print("Error: Could not find project root. Make sure you're in a git repository or a directory with pyproject.toml.")
-        sys.exit(1)
-
-    # Create a new database
-    print("Creating new database...")
-    create_output, create_error, create_code = run_command("turso db create")
-    print(f"Output: {create_output}")
-    if create_error:
-        print(f"Error: {create_error}")
-        print(f"Return code: {create_code}")
-        sys.exit(1)
-
-    # Extract database name from create output
-    db_name_match = re.search(r'Created database (\S+)', create_output)
-    if db_name_match:
-        db_name = db_name_match.group(1)
+    # Determine database name
+    if args.name:
+        db_name = args.name
     else:
-        print("Error: Could not extract database name from output.")
+        db_name = ConfigManager.get_default_database_name()
+
+    # Create a new database with specified name
+    print(f"Creating new database: {db_name}")
+    create_output, create_error, create_code = run_command(f"turso db create {db_name}")
+    
+    if create_code != 0:
+        print(f"Error creating database: {create_error}")
         sys.exit(1)
 
     # Show database details
     print(f"\nRetrieving details for database: {db_name}")
     show_output, show_error, show_code = run_command(f"turso db show {db_name}")
-    print(f"Output: {show_output}")
-    if show_error:
-        print(f"Error: {show_error}")
-        print(f"Return code: {show_code}")
+    
+    if show_code != 0:
+        print(f"Error showing database details: {show_error}")
         sys.exit(1)
 
     # Extract URL from show output
@@ -192,33 +270,39 @@ def main():
     # Create a new token
     print(f"\nCreating token for database: {db_name}")
     token_output, token_error, token_code = run_command(f"turso db tokens create {db_name}")
-    print("Token created successfully")
-    if token_error:
-        print(f"Error: {token_error}")
-        print(f"Return code: {token_code}")
+    
+    if token_code != 0:
+        print(f"Error creating token: {token_error}")
         sys.exit(1)
 
-    # Get token from token output
     auth_token = token_output.strip()
 
     # Generate environment variables
     new_vars = {"DB_URL": db_url, "AUTH_TOKEN": auth_token}
     env_vars = f"DB_URL={db_url}\nAUTH_TOKEN={auth_token}"
 
-    # Print the environment variables to console
     print("\nGenerated Environment Variables:")
     print(env_vars)
 
-    if args.overwrite:
+    # Save to env file if specified
+    project_root = find_project_root()
+    if args.overwrite and project_root:
         update_env_file(os.path.join(project_root, args.overwrite), new_vars)
         print(f"\nEnvironment variables have been updated in {args.overwrite}")
-    else:
-        print("\nNo overwrite path provided. Environment variables will not be saved to a file.")
+    elif args.overwrite:
+        print("Could not find project root to update environment file.")
 
-    # Copy to clipboard
-    pyperclip.copy(env_vars)
-    print("Environment variables have been copied to clipboard. ")
-    print("Much love xxx remcostoeten")
+    # Cross-platform clipboard handling
+    clipboard_handler = get_clipboard_handler()
+    clipboard_handler(env_vars)
+    print("Environment variables have been copied to clipboard.")
+
+    # Optionally save default database name to config
+    config = ConfigManager.load_config()
+    config['default_database_name'] = db_name
+    ConfigManager.save_config(config)
+
+    print("\nMuch love xxx remcostoeten")
 
 if __name__ == "__main__":
     main()

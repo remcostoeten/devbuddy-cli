@@ -2,12 +2,24 @@ import boxen from 'boxen';
 import chalk from 'chalk';
 import gradient from 'gradient-string';
 export const styles = {
-    title: (text) => boxen(gradient.pastel.multiline(text), {
-        padding: 1,
-        margin: 1,
-        borderStyle: 'double',
-        borderColor: 'cyan',
-    }),
+    title: (text) => {
+        const asciiArt = `
+    ██████╗ ███████╗██╗   ██╗██████╗ ██╗   ██╗██████╗ ██████╗ ██╗   ██╗
+    ██╔══██╗██╔════╝██║   ██║██╔══██╗██║   ██║██╔══██╗██╔══██╗╚██╗ ██╔╝
+    ██║  ██║█████╗  ██║   ██║██████╔╝██║   ██║██║  ██║██║  ██║ ╚████╔╝ 
+    ██║  ██║██╔══╝  ╚██╗ ██╔╝██╔══██╗██║   ██║██║  ██║██║  ██║  ╚██╔╝  
+    ██████╔╝███████╗ ╚████╔╝ ██████╔╝╚██████╔╝██████╔╝██████╔╝   ██║   
+    ╚═════╝ ╚══════╝  ╚═══╝  ╚═════╝  ╚═════╝ ╚═════╝ ╚═════╝    ╚═╝   
+    `;
+        const banner = gradient.passion.multiline(asciiArt);
+        const subtitle = gradient.morning.multiline(text);
+        return boxen(`${banner}\n${subtitle}`, {
+            padding: 1,
+            margin: 1,
+            borderStyle: 'double',
+            borderColor: 'cyan',
+        });
+    },
     section: (text) => boxen(gradient.morning(text), {
         padding: 1,
         borderStyle: 'round',

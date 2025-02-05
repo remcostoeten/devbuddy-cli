@@ -4,8 +4,48 @@ import { logger } from "../../utils/logger.js";
 import fs from "fs/promises";
 import path from "path";
 import { fileURLToPath } from "url";
+import { MenuBuilder } from "../../utils/menu-builder.js";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+async function installTursoCli() {
+    try {
+        const isWindows = process.platform === 'win32';
+        const isMac = process.platform === 'darwin';
+        if (isMac) {
+            logger.info("Installing Turso CLI via Homebrew...");
+            execSync("brew install tursodatabase/tap/turso", { stdio: 'inherit' });
+        }
+        else {
+            logger.info("Installing Turso CLI...");
+            execSync("curl -sSfL https://get.tur.so/install.sh | bash", { stdio: 'inherit' });
+        }
+        logger.info("✅ Turso CLI installed successfully!");
+        return true;
+    }
+    catch (error) {
+        logger.error("Failed to install Turso CLI:", error);
+        return false;
+    }
+}
+async function checkTursoCli() {
+    try {
+        execSync("turso --version", { stdio: "pipe" });
+        return true;
+    }
+    catch (error) {
+        logger.error("Turso CLI is not installed.");
+        const shouldInstall = await confirmAction("Would you like to install it now?");
+        if (shouldInstall) {
+            return await installTursoCli();
+        }
+        else {
+            logger.info("You can install it manually with:");
+            logger.info("On macOS: brew install tursodatabase/tap/turso");
+            logger.info("On Linux/Windows: curl -sSfL https://get.tur.so/install.sh | bash");
+            return false;
+        }
+    }
+}
 async function checkTursoAuth() {
     try {
         execSync("turso auth status", { stdio: "pipe" });
@@ -100,63 +140,90 @@ export const tursoDbManager = {
     category: "Database Tools",
     async action() {
         try {
-            if (!await checkTursoAuth()) {
+            if (!await checkTursoCli())
                 return;
-            }
-            const choices = [
-                { value: "create", label: "Create new Turso database" },
-                { value: "list", label: "List all databases" },
-                { value: "delete", label: "Delete a database" },
-                { value: "env", label: "Update .env file with credentials" }
+            if (!await checkTursoAuth())
+                return;
+            const menuItems = [
+                {
+                    value: "create",
+                    label: "Create Database",
+                    description: "Create a new Turso database",
+                    subMenu: [
+                        {
+                            value: "create_simple",
+                            label: "Quick Create",
+                            description: "Create database with default settings",
+                            action: async () => {
+                                const credentials = await createTursoDb();
+                                if (credentials) {
+                                    logger.info("Database created successfully!");
+                                    logger.info(`DB_URL=${credentials.dbUrl}`);
+                                    logger.info(`AUTH_TOKEN=${credentials.authToken}`);
+                                    logger.info(`TURSO_DB_NAME=${credentials.dbName}`);
+                                    const updateEnv = await confirmAction("Would you like to update your .env file with these credentials?");
+                                    if (updateEnv) {
+                                        await updateEnvFile(".env", credentials);
+                                    }
+                                }
+                            }
+                        },
+                        {
+                            value: "create_advanced",
+                            label: "Advanced Create",
+                            description: "Configure database settings",
+                            subMenu: [
+                            // Additional creation options could go here
+                            ]
+                        }
+                    ]
+                },
+                {
+                    value: "manage",
+                    label: "Manage Databases",
+                    description: "List, modify, or delete databases",
+                    subMenu: [
+                        {
+                            value: "list",
+                            label: "List Databases",
+                            description: "Show all databases",
+                            action: listDatabases
+                        },
+                        {
+                            value: "delete",
+                            label: "Delete Database",
+                            description: "Remove a database",
+                            action: async () => {
+                                const output = execSync("turso db list", { encoding: "utf8" });
+                                const databases = output.split("\n")
+                                    .filter(line => line.trim())
+                                    .map(line => ({ value: line.trim(), label: line.trim() }));
+                                if (databases.length === 0) {
+                                    logger.info("No databases found");
+                                    return;
+                                }
+                                const dbToDelete = await selectTool(databases);
+                                if (typeof dbToDelete === 'string') {
+                                    const confirmed = await confirmAction(`Are you sure you want to delete database ${dbToDelete}?`);
+                                    if (confirmed) {
+                                        await deleteDatabase(dbToDelete);
+                                    }
+                                }
+                            }
+                        }
+                    ]
+                },
+                {
+                    value: "env",
+                    label: "Environment Setup",
+                    description: "Manage environment variables",
+                    action: async () => {
+                        // ... env file management logic ...
+                    }
+                }
             ];
-            while (true) {
-                const selected = await selectTool(choices);
-                switch (selected) {
-                    case "create": {
-                        const credentials = await createTursoDb();
-                        if (credentials) {
-                            logger.info("Database created successfully!");
-                            logger.info(`DB_URL=${credentials.dbUrl}`);
-                            logger.info(`AUTH_TOKEN=${credentials.authToken}`);
-                            logger.info(`TURSO_DB_NAME=${credentials.dbName}`);
-                            const updateEnv = await confirmAction("Would you like to update your .env file with these credentials?");
-                            if (updateEnv) {
-                                await updateEnvFile(".env", credentials);
-                            }
-                        }
-                        break;
-                    }
-                    case "list": {
-                        await listDatabases();
-                        break;
-                    }
-                    case "delete": {
-                        const output = execSync("turso db list", { encoding: "utf8" });
-                        const databases = output.split("\n")
-                            .filter(line => line.trim())
-                            .map(line => ({ value: line.trim(), label: line.trim() }));
-                        if (databases.length === 0) {
-                            logger.info("No databases found");
-                            break;
-                        }
-                        const dbToDelete = await selectTool(databases);
-                        if (typeof dbToDelete === 'string') {
-                            const confirmed = await confirmAction(`Are you sure you want to delete database ${dbToDelete}?`);
-                            if (confirmed) {
-                                await deleteDatabase(dbToDelete);
-                            }
-                        }
-                        break;
-                    }
-                    case null:
-                    case undefined:
-                        return;
-                }
-                const continueManaging = await confirmAction("Would you like to perform another Turso operation?");
-                if (!continueManaging) {
-                    break;
-                }
-            }
+            const menu = new MenuBuilder(menuItems);
+            await menu.run();
         }
         catch (error) {
             logger.error("Error in Turso DB manager:", error);

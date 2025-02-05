@@ -1,4 +1,5 @@
-import chalk from "chalk"
+import { logger } from '../../utils/logger.js'
+import chalk from 'chalk'
 import { simpleGit } from 'simple-git'
 
 /**
@@ -6,14 +7,14 @@ import { simpleGit } from 'simple-git'
  */
 export async function showIntro(): Promise<void> {
   const git = simpleGit({ baseDir: process.cwd() })
-  const lastCommitDate = await git.log(["-1", "--format=%cd"])
-  const { version, author } = require("../../package.json")
+  const lastCommitDate = await git.log(['-1', '--format=%cd'])
+  const { version, author } = require('../../package.json')
 
-  console.log(chalk.bold.blue("Welcome to DevBuddy!"))
-  console.log(chalk.gray(`Version: ${version}`))
-  console.log(chalk.gray(`Last updated: ${lastCommitDate}`))
-  console.log(chalk.gray(`Author: ${author}`))
-  console.log("")
+  logger.info(chalk.bold.blue('Welcome to DevBuddy!'))
+  logger.info(chalk.gray(`Version: ${version}`))
+  logger.info(chalk.gray(`Last updated: ${lastCommitDate}`))
+  logger.info(chalk.gray(`Author: ${author}`))
+  logger.info('')
 }
 
 export async function showGitInfo() {
@@ -26,8 +27,7 @@ export async function showGitInfo() {
       files: status.files,
     }
   } catch (error) {
-    console.error('Error getting git info:', error)
+    logger.error('Error getting git info:', error)
     return null
   }
 }
-

@@ -1,8 +1,9 @@
-import fs from "fs/promises"
-import path from "path"
-import chalk from "chalk"
-import { glob } from "glob"
-import inquirer from "inquirer"
+import { logger } from '../../utils/logger.js'
+import fs from 'fs/promises'
+import path from 'path'
+import chalk from 'chalk'
+import { glob } from 'glob'
+import inquirer from 'inquirer'
 
 /**
  * Deletes unused files in the UI folder.
@@ -10,19 +11,19 @@ import inquirer from "inquirer"
  * @param dryRun If true, only log changes without deleting files.
  */
 export async function deleteUnusedFiles(uiFolder: string, dryRun: boolean): Promise<void> {
-  const allFiles = await glob("**/*.tsx", { ignore: ["node_modules/**"] })
+  const allFiles = await glob('**/*.tsx', { ignore: ['node_modules/**'] })
   const uiFiles = await fs.readdir(uiFolder)
   const usedComponents = new Set<string>()
 
   // Find all used components
   for (const file of allFiles) {
-    const content = await fs.readFile(file, "utf-8")
+    const content = await fs.readFile(file, 'utf-8')
     const imports = content.match(/import\s+{\s*([^}]+)\s*}\s+from\s+['"]([^'"]+)['"]/g) || []
 
     for (const importStatement of imports) {
       const components = importStatement
         .match(/{\s*([^}]+)\s*}/)?.[1]
-        .split(",")
+        .split(',')
         .map((c) => c.trim())
       components?.forEach((component) => usedComponents.add(component))
     }
@@ -31,8 +32,8 @@ export async function deleteUnusedFiles(uiFolder: string, dryRun: boolean): Prom
   // Check for unused files
   const unusedFiles: string[] = []
   for (const file of uiFiles) {
-    if (file.endsWith(".tsx") && file !== "index.tsx") {
-      const componentName = path.basename(file, ".tsx")
+    if (file.endsWith('.tsx') && file !== 'index.tsx') {
+      const componentName = path.basename(file, '.tsx')
       if (!usedComponents.has(componentName)) {
         unusedFiles.push(file)
       }
@@ -40,21 +41,21 @@ export async function deleteUnusedFiles(uiFolder: string, dryRun: boolean): Prom
   }
 
   if (unusedFiles.length === 0) {
-    console.log(chalk.green("No unused files found in the UI folder."))
+    logger.info(chalk.green('No unused files found in the UI folder.'))
     return
   }
 
-  console.log(chalk.yellow(`\nFound ${unusedFiles.length} unused file(s) in the UI folder:`))
-  unusedFiles.forEach((file) => console.log(chalk.gray(`  - ${file}`)))
+  logger.info(chalk.yellow(`\nFound ${unusedFiles.length} unused file(s) in the UI folder:`))
+  unusedFiles.forEach((file) => logger.info(chalk.gray(`  - ${file}`)))
 
   if (dryRun) {
-    console.log(chalk.yellow("\nDry run: No files were deleted."))
+    logger.info(chalk.yellow('\nDry run: No files were deleted.'))
   } else {
     const { confirmDelete } = await inquirer.prompt([
       {
-        type: "confirm",
-        name: "confirmDelete",
-        message: "Do you want to delete these unused files?",
+        type: 'confirm',
+        name: 'confirmDelete',
+        message: 'Do you want to delete these unused files?',
         default: false,
       },
     ])
@@ -62,12 +63,11 @@ export async function deleteUnusedFiles(uiFolder: string, dryRun: boolean): Prom
     if (confirmDelete) {
       for (const file of unusedFiles) {
         await fs.unlink(path.join(uiFolder, file))
-        console.log(chalk.green(`Deleted: ${file}`))
+        logger.info(chalk.green(`Deleted: ${file}`))
       }
-      console.log(chalk.green("\nUnused files have been deleted successfully."))
+      logger.info(chalk.green('\nUnused files have been deleted successfully.'))
     } else {
-      console.log(chalk.yellow("\nDeletion cancelled. No files were deleted."))
+      logger.info(chalk.yellow('\nDeletion cancelled. No files were deleted.'))
     }
   }
 }
-

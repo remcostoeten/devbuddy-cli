@@ -7,8 +7,7 @@ export interface UIFolderManagerConfig {
 
 export const defaultConfig: UIFolderManagerConfig = {
   dryRun: true,
-  uiFolderName: "ui",
-  filePatterns: ["**/*.tsx"],
-  excludePatterns: ["node_modules/**"],
+  uiFolderName: 'ui',
+  filePatterns: ['**/*.tsx'],
+  excludePatterns: ['node_modules/**'],
 }
-

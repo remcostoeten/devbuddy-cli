@@ -1,22 +1,22 @@
-import * as p from "@clack/prompts"
-import { logger } from "./logger.js"
+import * as p from '@clack/prompts'
+import { logger } from './logger.js'
 
 export async function showIntro() {
-  p.intro("Welcome to DevBuddy!")
+  p.intro('Welcome to DevBuddy!')
 }
 
 export async function showOutro() {
-  p.outro("Thanks for using DevBuddy!")
+  p.outro('Thanks for using DevBuddy!')
 }
 
 export async function selectTool(choices: { value: string; label: string }[]) {
   const result = await p.select({
-    message: "Select a tool to use:",
+    message: 'Select a tool to use:',
     options: choices,
   })
 
   if (p.isCancel(result)) {
-    logger.info("Operation cancelled")
+    logger.info('Operation cancelled')
     process.exit(0)
   }
 
@@ -29,7 +29,7 @@ export async function confirmAction(message: string) {
   })
 
   if (p.isCancel(result)) {
-    logger.info("Operation cancelled")
+    logger.info('Operation cancelled')
     process.exit(0)
   }
 
@@ -42,12 +42,11 @@ export async function showSpinner<T>(message: string, action: () => Promise<T>):
 
   try {
     const result = await action()
-    s.stop(message + " Complete!")
+    s.stop(message + ' Complete!')
     return result
   } catch (error) {
-    s.stop(message + " Failed!")
+    s.stop(message + ' Failed!')
     logger.error(`Error in action: ${message}`, error)
     throw error
   }
 }
-

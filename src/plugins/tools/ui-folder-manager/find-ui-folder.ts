@@ -1,5 +1,5 @@
-import fs from "fs/promises"
-import path from "path"
+import fs from 'fs/promises'
+import path from 'path'
 
 /**
  * Recursively searches for a UI folder in the project.
@@ -10,7 +10,7 @@ export async function findUIFolder(dir: string = process.cwd()): Promise<string 
 
   for (const file of files) {
     if (file.isDirectory()) {
-      if (file.name.toLowerCase() === "ui") {
+      if (file.name.toLowerCase() === 'ui') {
         return path.join(dir, file.name)
       }
       const uiFolder = await findUIFolder(path.join(dir, file.name))
@@ -22,4 +22,3 @@ export async function findUIFolder(dir: string = process.cwd()): Promise<string 
 
   return null
 }
-

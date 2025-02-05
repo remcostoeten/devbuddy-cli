@@ -1,11 +1,11 @@
-import Conf from "conf"
+import Conf from 'conf'
 import { logger } from '../utils/logger.js'
 
 const config = new Conf({
-  projectName: "devbuddy",
+  projectName: 'devbuddy',
   defaults: {
-    theme: "default",
-    defaultCategory: "All",
+    theme: 'default',
+    defaultCategory: 'All',
   },
 })
 
@@ -26,4 +26,3 @@ export function setConfig<T>(key: string, value: T): void {
     throw error
   }
 }
-

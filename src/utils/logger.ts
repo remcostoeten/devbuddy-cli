@@ -1,13 +1,29 @@
-import winston from "winston"
+import chalk from 'chalk'
+import * as p from '@clack/prompts'
 
-export const logger = winston.createLogger({
-  level: "info",
-  format: winston.format.combine(
-    winston.format.timestamp(),
-    winston.format.printf(({ timestamp, level, message }) => {
-      return `${timestamp} ${level}: ${message}`
-    }),
-  ),
-  transports: [new winston.transports.Console(), new winston.transports.File({ filename: "devbuddy.log" })],
-})
+export const logger = {
+  info: (message: string) => {
+    p.log.info(chalk.blue(message))
+  },
 
+  success: (message: string) => {
+    p.log.success(chalk.green(message))
+  },
+
+  warning: (message: string) => {
+    p.log.warn(chalk.yellow(message))
+  },
+
+  error: (message: string, error?: unknown) => {
+    p.log.error(chalk.red(message))
+    if (error && process.env.NODE_ENV === 'development') {
+      p.log.error(chalk.red(String(error)))
+    }
+  },
+
+  debug: (message: string) => {
+    if (process.env.NODE_ENV === 'development') {
+      p.log.info(chalk.gray(`[DEBUG] ${message}`))
+    }
+  },
+}

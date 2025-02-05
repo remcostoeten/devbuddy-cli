@@ -1,12 +1,12 @@
-import fs from "fs/promises"
-import path from "path"
-import { fileURLToPath } from "url"
-import type { Plugin } from "../types/plugin.js"
-import { logger } from "../utils/logger.js"
+import fs from 'fs/promises'
+import path from 'path'
+import { fileURLToPath } from 'url'
+import type { Plugin } from '../types/plugin.js'
+import { logger } from '../utils/logger.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
-const featuresDir = path.join(__dirname, "..", "features")
+const featuresDir = path.join(__dirname, '..', 'features')
 
 export async function loadPlugins(): Promise<Plugin[]> {
   const plugins: Plugin[] = []
@@ -18,7 +18,7 @@ export async function loadPlugins(): Promise<Plugin[]> {
       const stat = await fs.stat(featurePath)
 
       if (stat.isDirectory()) {
-        const indexPath = path.join(featurePath, "index.js")
+        const indexPath = path.join(featurePath, 'index.js')
         try {
           const { default: plugin } = await import(indexPath)
           if (isValidPlugin(plugin)) {
@@ -32,7 +32,7 @@ export async function loadPlugins(): Promise<Plugin[]> {
       }
     }
   } catch (error) {
-    logger.error("Error loading plugins:", error)
+    logger.error('Error loading plugins:', error)
   }
 
   return plugins
@@ -40,10 +40,9 @@ export async function loadPlugins(): Promise<Plugin[]> {
 
 function isValidPlugin(plugin: any): plugin is Plugin {
   return (
-    typeof plugin === "object" &&
-    typeof plugin.name === "string" &&
-    typeof plugin.description === "string" &&
-    typeof plugin.action === "function"
+    typeof plugin === 'object' &&
+    typeof plugin.name === 'string' &&
+    typeof plugin.description === 'string' &&
+    typeof plugin.action === 'function'
   )
 }
-

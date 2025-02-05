@@ -4,4 +4,3 @@ export interface Plugin {
   action: () => Promise<void>
   category?: string
 }
-

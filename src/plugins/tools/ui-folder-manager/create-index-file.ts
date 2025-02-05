@@ -1,6 +1,7 @@
-import fs from "fs/promises"
-import inquirer from "inquirer"
-import chalk from "chalk"
+import { logger } from '../../utils/logger.js'
+import fs from 'fs/promises'
+import inquirer from 'inquirer'
+import chalk from 'chalk'
 
 /**
  * Creates an index.ts file in the UI folder if it doesn't exist.
@@ -10,26 +11,25 @@ import chalk from "chalk"
 export async function createIndexFile(indexPath: string): Promise<boolean> {
   try {
     await fs.access(indexPath)
-    console.log(chalk.yellow("index.ts file already exists."))
+    logger.info(chalk.yellow('index.ts file already exists.'))
     return true
   } catch (error) {
     const { createIndex } = await inquirer.prompt([
       {
-        type: "confirm",
-        name: "createIndex",
-        message: "No index.ts file found. Do you want to create one?",
+        type: 'confirm',
+        name: 'createIndex',
+        message: 'No index.ts file found. Do you want to create one?',
         default: true,
       },
     ])
 
     if (createIndex) {
-      await fs.writeFile(indexPath, "")
-      console.log(chalk.green("index.ts file created successfully."))
+      await fs.writeFile(indexPath, '')
+      logger.info(chalk.green('index.ts file created successfully.'))
       return true
     } else {
-      console.log(chalk.red("Operation cancelled. No index.ts file created."))
+      logger.info(chalk.red('Operation cancelled. No index.ts file created.'))
       return false
     }
   }
 }
-

@@ -1,6 +1,6 @@
-import type { Command } from "commander"
-import fs from "fs"
-import path from "path"
+import type { Command } from 'commander'
+import fs from 'fs'
+import path from 'path'
 
 /**
  * Represents a plugin for DevBuddy.
@@ -16,7 +16,7 @@ export interface Plugin {
   action: () => Promise<void>
 }
 
-const pluginsDir = path.join(__dirname, "tools")
+const pluginsDir = path.join(__dirname, 'tools')
 
 /**
  * Loads all plugins from the tools directory.
@@ -27,7 +27,7 @@ export function loadPlugins(program: Command): Plugin[] {
   const plugins: Plugin[] = []
 
   fs.readdirSync(pluginsDir).forEach((file) => {
-    if (file.endsWith(".ts") || file.endsWith(".js")) {
+    if (file.endsWith('.ts') || file.endsWith('.js')) {
       const plugin = require(path.join(pluginsDir, file)).default
       plugins.push(plugin)
 
@@ -37,4 +37,3 @@ export function loadPlugins(program: Command): Plugin[] {
 
   return plugins
 }
-
