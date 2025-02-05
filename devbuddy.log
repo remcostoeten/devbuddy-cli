@@ -7,3 +7,5 @@ You are not logged in, please login with turso auth login before running other c
 2025-02-04T21:34:10.578Z info: Goodbye! 👋
 2025-02-05T13:28:03.616Z info: Goodbye! 👋
 2025-02-05T13:33:36.668Z info: Operation cancelled
+2025-02-05T13:36:50.038Z error: Error creating Turso database: Could not extract database name from output
+2025-02-05T13:36:53.968Z info: Operation cancelled

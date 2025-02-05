@@ -15,6 +15,46 @@ interface TursoCredentials {
   dbName: string;
 }
 
+async function installTursoCli(): Promise<boolean> {
+  try {
+    const isWindows = process.platform === 'win32';
+    const isMac = process.platform === 'darwin';
+    
+    if (isMac) {
+      logger.info("Installing Turso CLI via Homebrew...");
+      execSync("brew install tursodatabase/tap/turso", { stdio: 'inherit' });
+    } else {
+      logger.info("Installing Turso CLI...");
+      execSync("curl -sSfL https://get.tur.so/install.sh | bash", { stdio: 'inherit' });
+    }
+    
+    logger.info("✅ Turso CLI installed successfully!");
+    return true;
+  } catch (error) {
+    logger.error("Failed to install Turso CLI:", error);
+    return false;
+  }
+}
+
+async function checkTursoCli(): Promise<boolean> {
+  try {
+    execSync("turso --version", { stdio: "pipe" });
+    return true;
+  } catch (error) {
+    logger.error("Turso CLI is not installed.");
+    const shouldInstall = await confirmAction("Would you like to install it now?");
+    
+    if (shouldInstall) {
+      return await installTursoCli();
+    } else {
+      logger.info("You can install it manually with:");
+      logger.info("On macOS: brew install tursodatabase/tap/turso");
+      logger.info("On Linux/Windows: curl -sSfL https://get.tur.so/install.sh | bash");
+      return false;
+    }
+  }
+}
+
 async function checkTursoAuth(): Promise<boolean> {
   try {
     execSync("turso auth status", { stdio: "pipe" });
@@ -114,6 +154,10 @@ export const tursoDbManager: Plugin = {
   category: "Database Tools",
   async action() {
     try {
+      if (!await checkTursoCli()) {
+        return;
+      }
+
       if (!await checkTursoAuth()) {
         return;
       }

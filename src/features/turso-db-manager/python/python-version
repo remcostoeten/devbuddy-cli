@@ -1,0 +1,88 @@
+# Turso DB Environment Variables Generator
+
+This script generates a new database in [Turso](https://turso.tech/), the cutting-edge [SQLite](https://www.sqlite.org/)-based cloud database provider. [Turso](https://docs.turso.tech/) offers up to 500 free databases, eliminating the manual hassle of database credential management.
+
+## TLDR:
+- Generates a new [Turso](https://turso.tech/product) database
+- Runs the [Turso CLI](https://docs.turso.tech/cli/overview) to show database details and copy URL
+- Generates a new auth token and copies to clipboard 
+- Resulting in the following clipboard:
+
+```bash
+DB_URL=libsql://...tursodb.io AUTH_TOKEN=xxxx 
+```
+
+- With `--overwrite` flag, overwrites `.env` file and renames old credentials
+
+## Usage
+
+Run the script:
+
+```bash
+python *PATH/TO*turso-db-manager.py [--overwrite PATH] 
+```
+Where `*PATH/TO*` obviously is the path where the script lives, and `[--overwirte PATH]` is the `.env` Which would result in this if you have the sript located in `src/scripts`:
+```bash
+python3 src/scripts/turso-db-manager.py --overwrite .env
+```
+<small>--overwrite is optional</small>
+
+### Generate environment variables without saving:
+
+```bash
+python generate_tursodb_and_all_enviormentsvars.py 
+```
+
+## Environment Variables
+
+- `DB_URL`: Created Turso database URL
+- `AUTH_TOKEN`: Database authentication token
+<small>If you want different names for the name of the enviorment variable simply search for that string in the source code and replace.</small>
+
+## Requirements
+
+- [Python 3.x](https://www.python.org/)
+- [Turso CLI](https://docs.turso.tech/cli/installation)
+- `pyperclip` library
+
+## Installation
+
+Install Python library:
+
+```bash
+pip install pyperclip 
+```
+
+Authenticate with Turso CLI:
+
+```bash
+turso auth login 
+```
+
+Run the script:
+
+```bash
+python3 src/core/scripts/generate_tursodb_and_all_enviormentsvars.py 
+```
+
+Example output:
+
+```bash
+Creating token for database: alive-scorpion
+Token created successfully
+Generated Environment Variables: 
+DB_URL=libsql://alive-scorpion-remcostoeten.turso.io 
+AUTH_TOKEN=eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCJ9.eyJpYXQiOjE3MjUwNDE3MjIsImlkIjoiY2FjY2UzYjAtMDlkNC00NzFiLTgzM2ItZjgyMGI0NGI3MjRlIn0.PasqvUWo2EKxaPTlIC_hu2oPkI2wL6Awv1-iwcEtaTwtYH94kPVmNVPC9OE02nfmIKA7nmYN2mYdgDFz6ILJBg 
+```
+
+xxx love y'all,
+
+yours sincerely [Remco Stoeten](https://github.com/remcostoeten)
+
+Links:
+- [GitHub Profile](https://github.com/remcostoeten)
+- [Personal Website](https://remcostoeten.com)
+- [Initial Repository](https://github.com/remcostoeten/Turso)
+- [Turso Documentation](https://docs.turso.tech/)
+
+PS: a star for my e-penor is always appreciated. ✨
