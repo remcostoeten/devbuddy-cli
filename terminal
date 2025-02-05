@@ -1,0 +1,2 @@
+pnpm add inquirer-autocomplete-prompt fuzzy
+pnpm add -D @types/inquirer-autocomplete-prompt 

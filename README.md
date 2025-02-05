@@ -71,23 +71,47 @@ devbuddy <module-name>
 
 ## Publishing
 
-To publish a new version:
+### Prerequisites
+
+1. Create an npm account at https://www.npmjs.com/signup
+2. Create the `@devbuddy` organization/scope:
+   ```bash
+   npm org create devbuddy
+   ```
+   Or create it manually at https://www.npmjs.com/org/create
+
+3. Add yourself to the organization:
+   ```bash
+   npm org add @devbuddy <your-npm-username>
+   ```
+
+### Publishing Steps
 
 ```bash
-# 1. Update version in package.json
+# 1. Make sure you're authenticated with npm
+npm adduser     # If you've never logged in before
+# OR
+npm login       # If you already have an account
+
+# 2. Fix any package.json issues
+npm pkg fix     # Fixes common package.json errors
+
+# 3. Update version in package.json
 npm version patch   # for bug fixes
 npm version minor   # for new features
 npm version major   # for breaking changes
 
-# 2. Build the project
+# 4. Build the project
 npm run build
 
-# 3. Publish to npm
+# 5. Publish to npm
 npm publish --access public
-
-# Note: Make sure you're logged in to npm:
-npm login
 ```
+
+Note: If you get scope-related errors:
+1. Make sure the `@devbuddy` organization exists on npm
+2. Verify you're a member of the organization (`npm org ls @devbuddy`)
+3. Ensure you have publish rights (`npm access ls-collaborators @devbuddy/cli`)
 
 ## Contributing
 

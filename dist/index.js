@@ -2,12 +2,25 @@
 import { Command } from "commander";
 import updateNotifier from "update-notifier";
 import { loadPlugins } from "./core/plugin-loader.js";
-import { showNavigationMenu } from "./ui/navigation-menu.js";
 import { showHelperMenu } from "./ui/helper-menu.js";
 import { logger } from "./utils/logger.js";
 import { createRequire } from "module";
+import { promptForModule } from "./utils/prompt.js";
 const require = createRequire(import.meta.url);
 const pkg = require("../package.json");
+async function showNavigationMenu(plugins) {
+    const moduleChoices = plugins.map(plugin => ({
+        name: plugin.name,
+        value: plugin.name,
+        description: plugin.description
+    }));
+    const selectedModule = await promptForModule(moduleChoices);
+    // Find and execute the selected plugin
+    const selectedPlugin = plugins.find(p => p.name === selectedModule);
+    if (selectedPlugin) {
+        await selectedPlugin.action();
+    }
+}
 async function main() {
     try {
         updateNotifier({ pkg }).notify();
