@@ -1,12 +1,47 @@
 import subprocess
 import re
-import pyperclip
 import argparse
 import os
 import sys
 import platform
 import json
 import uuid
+from typing import Dict, Optional
+
+def check_pyperclip():
+    """Check if pyperclip is installed and install if missing."""
+    try:
+        import pyperclip
+        return True, pyperclip
+    except ImportError:
+        print("\n❌ pyperclip is not installed but required for clipboard functionality.")
+        response = input("Would you like to install it now? (Y/n): ").lower()
+        
+        if response != 'y' and response != '':
+            print("Continuing without clipboard functionality...")
+            return False, None
+            
+        try:
+            # Try different pip installation methods
+            try:
+                subprocess.check_call(["pip", "install", "pyperclip"])
+            except subprocess.CalledProcessError:
+                try:
+                    subprocess.check_call(["pip3", "install", "pyperclip"])
+                except subprocess.CalledProcessError:
+                    subprocess.check_call([sys.executable, "-m", "pip", "install", "pyperclip"])
+            
+            print("✅ pyperclip installed successfully!")
+            import pyperclip
+            return True, pyperclip
+        except Exception as e:
+            print(f"❌ Failed to install pyperclip: {e}")
+            print("You can try installing manually with: pip install pyperclip")
+            print("Continuing without clipboard functionality...")
+            return False, None
+
+# Initialize pyperclip at startup
+HAS_PYPERCLIP, pyperclip_module = check_pyperclip()
 
 def check_turso_cli():
     """Check if Turso CLI is installed."""
@@ -132,88 +167,173 @@ def find_project_root():
         current_dir = parent
 
 class ConfigManager:
-    """Manage configuration for database creation and environment setup."""
-    
-    CONFIG_FILE = 'turso_config.json'
-    
+    CONFIG_FILE = os.path.expanduser('~/.turso-db-config.json')
+    DEFAULT_CONFIG = {
+        'default_database_name': None,
+        'databases': {}
+    }
+
     @classmethod
-    def load_config(cls):
-        """Load configuration from JSON file."""
+    def load_config(cls) -> Dict:
         try:
             if os.path.exists(cls.CONFIG_FILE):
                 with open(cls.CONFIG_FILE, 'r') as f:
                     return json.load(f)
-        except (json.JSONDecodeError, IOError):
-            pass
-        return {}
-    
+            return cls.DEFAULT_CONFIG.copy()
+        except Exception as e:
+            print(f"Error loading config: {e}")
+            return cls.DEFAULT_CONFIG.copy()
+
     @classmethod
-    def save_config(cls, config):
-        """Save configuration to JSON file."""
-        with open(cls.CONFIG_FILE, 'w') as f:
-            json.dump(config, f, indent=4)
-    
-    @classmethod
-    def get_default_database_name(cls):
-        """Generate or retrieve a default database name."""
-        config = cls.load_config()
-        
-        # If a default name exists in config, use it
-        if config.get('default_database_name'):
-            return config['default_database_name']
-        
-        # Generate a unique database name
-        return f"db_{uuid.uuid4().hex[:8]}"    """Manage configuration for database creation and environment setup."""
-    
-    CONFIG_FILE = 'turso_config.json'
-    
-    @classmethod
-    def load_config(cls):
-        """Load configuration from JSON file."""
+    def save_config(cls, config: Dict) -> None:
         try:
-            if os.path.exists(cls.CONFIG_FILE):
-                with open(cls.CONFIG_FILE, 'r') as f:
-                    return json.load(f)
-        except (json.JSONDecodeError, IOError):
-            return {}
-    
+            with open(cls.CONFIG_FILE, 'w') as f:
+                json.dump(config, f, indent=2)
+        except Exception as e:
+            print(f"Error saving config: {e}")
+
     @classmethod
-    def save_config(cls, config):
-        """Save configuration to JSON file."""
-        with open(cls.CONFIG_FILE, 'w') as f:
-            json.dump(config, f, indent=4)
-    
-    @classmethod
-    def get_default_database_name(cls):
-        """Generate or retrieve a default database name."""
+    def get_default_database_name(cls) -> Optional[str]:
         config = cls.load_config()
-        
-        # If a default name exists in config, use it
-        if config.get('default_database_name'):
-            return config['default_database_name']
-        
-        # Generate a unique database name
-        return f"db_{uuid.uuid4().hex[:8]}"
+        return config.get('default_database_name')
+
+    @classmethod
+    def set_default_database_name(cls, name: str) -> None:
+        config = cls.load_config()
+        config['default_database_name'] = name
+        cls.save_config(config)
 
 def get_clipboard_handler():
     """
     Get a clipboard handler that works across different platforms.
-    Prioritizes platform-specific methods for better reliability.
+    Falls back to manual copy if clipboard access fails.
     """
+    if not HAS_PYPERCLIP:
+        def manual_copy(text):
+            print("\nℹ️  Clipboard functionality not available. Please copy manually:")
+            print(text)
+        return manual_copy
+    
     os_type = platform.system().lower()
     
     if os_type == 'darwin':  # macOS
         def mac_clipboard(text):
-            subprocess.run(['pbcopy'], input=text.encode('utf-8'), check=True)
+            try:
+                subprocess.run(['pbcopy'], input=text.encode('utf-8'), check=True)
+                return True
+            except:
+                return pyperclip_module.copy(text)
         return mac_clipboard
     
     elif os_type == 'windows':
         def win_clipboard(text):
-            subprocess.run(['clip'], input=text.encode('utf-8'), check=True)
+            try:
+                subprocess.run(['clip'], input=text.encode('utf-8'), check=True)
+                return True
+            except:
+                return pyperclip_module.copy(text)
         return win_clipboard
     
-    else:  # Linux and others, fallback to pyperclip
-        return pyperclip.copy
+    else:  # Linux and others
+        def linux_clipboard(text):
+            try:
+                # Try xclip first
+                subprocess.run(['xclip', '-selection', 'clipboard'], input=text.encode('utf-8'), check=True)
+                return True
+            except:
+                try:
+                    # Try xsel next
+                    subprocess.run(['xsel', '--clipboard', '--input'], input=text.encode('utf-8'), check=True)
+                    return True
+                except:
+                    # Fall back to pyperclip
+                    return pyperclip_module.copy(text)
+        return linux_clipboard
+
+def create_database(db_name: str) -> bool:
+    try:
+        output = subprocess.check_output(['turso', 'db', 'create', db_name], 
+                                      stderr=subprocess.STDOUT,
+                                      text=True)
+        print(output)
+        return "created" in output.lower()
+    except subprocess.CalledProcessError as e:
+        print(f"Error creating database: {e.output}")
+        return False
+
+def get_database_url(db_name: str) -> Optional[str]:
+    try:
+        output = subprocess.check_output(['turso', 'db', 'show', db_name, '--url'], 
+                                      text=True)
+        return output.strip()
+    except subprocess.CalledProcessError as e:
+        print(f"Error getting database URL: {e.output}")
+        return None
+
+def create_auth_token(db_name: str) -> Optional[str]:
+    try:
+        output = subprocess.check_output(['turso', 'db', 'tokens', 'create', db_name], 
+                                      text=True)
+        return output.strip()
+    except subprocess.CalledProcessError as e:
+        print(f"Error creating auth token: {e.output}")
+        return None
+
+def copy_to_clipboard(text: str) -> bool:
+    """Copy text to clipboard with fallback options."""
+    if not HAS_PYPERCLIP:
+        print("\nℹ️  Clipboard functionality not available. Manual copy required:")
+        print(text)
+        return False
+
+    try:
+        pyperclip_module.copy(text)
+        return True
+    except Exception as e:
+        print(f"\n❌ Couldn't copy to clipboard: {e}")
+        print("Manual copy required:")
+        print(text)
+        return False
+
+def list_databases():
+    """List all available databases."""
+    try:
+        output = subprocess.run(['turso', 'db', 'list'], 
+                              capture_output=True, 
+                              text=True, 
+                              check=True)
+        print("\nAvailable Databases:")
+        print(output.stdout)
+        return True
+    except subprocess.CalledProcessError as e:
+        print(f"Error listing databases: {e}")
+        return False
+
+def delete_database(db_name: str) -> bool:
+    """Delete a specified database."""
+    try:
+        confirm = input(f"Are you sure you want to delete {db_name}? (y/N): ").lower()
+        if confirm != 'y':
+            print("Operation cancelled")
+            return False
+            
+        subprocess.run(['turso', 'db', 'destroy', db_name], check=True)
+        print(f"\n✅ Database {db_name} deleted successfully")
+        return True
+    except subprocess.CalledProcessError as e:
+        print(f"Error deleting database: {e}")
+        return False
+
+def setup_argparse():
+    parser = argparse.ArgumentParser(description='Turso Database Manager')
+    parser.add_argument('--overwrite', metavar='PATH', 
+                       help='Path to .env or .env.local file to overwrite')
+    parser.add_argument('--name', help='Specify a custom database name')
+    parser.add_argument('--list', action='store_true', 
+                       help='List all databases')
+    parser.add_argument('--delete', metavar='DB_NAME',
+                       help='Delete specified database')
+    return parser
 
 def main():
     # Check for Turso CLI installation
@@ -236,24 +356,52 @@ def main():
             sys.exit(1)
 
     # Set up argument parser
-    parser = argparse.ArgumentParser(description='Generate Turso DB credentials and update .env file.')
-    parser.add_argument('--overwrite', metavar='PATH', help='Path to .env or .env.local file to overwrite')
-    parser.add_argument('--name', help='Specify a custom database name')
+    parser = setup_argparse()
     args = parser.parse_args()
 
-    # Determine database name
-    if args.name:
-        db_name = args.name
-    else:
-        db_name = ConfigManager.get_default_database_name()
-
-    # Create a new database with specified name
-    print(f"Creating new database: {db_name}")
-    create_output, create_error, create_code = run_command(f"turso db create {db_name}")
+    # Initialize config
+    config = ConfigManager.load_config()
     
-    if create_code != 0:
-        print(f"Error creating database: {create_error}")
-        sys.exit(1)
+    # Get database name
+    db_name = ConfigManager.get_default_database_name()
+    if not db_name:
+        db_name = input("Enter database name: ").strip()
+        if not db_name:
+            print("Database name is required")
+            return
+
+    # Create database
+    if not create_database(db_name):
+        return
+
+    # Get URL and create token
+    db_url = get_database_url(db_name)
+    auth_token = create_auth_token(db_name)
+
+    if not db_url or not auth_token:
+        print("Failed to get database URL or auth token")
+        return
+
+    # Store in config
+    ConfigManager.set_default_database_name(db_name)
+
+    # Prepare environment variables
+    env_vars = {
+        'DB_URL': db_url,
+        'AUTH_TOKEN': auth_token
+    }
+
+    # Copy to clipboard
+    env_string = " ".join(f"{k}={v}" for k, v in env_vars.items())
+    if copy_to_clipboard(env_string):
+        print("\n✅ Credentials copied to clipboard!")
+
+    # Update .env if requested
+    should_update = input("\nUpdate .env file? (y/N): ").lower() == 'y'
+    if should_update:
+        env_path = input("Enter path to .env file (default: .env): ").strip() or '.env'
+        update_env_file(env_path, env_vars)
+        print(f"\nUpdated {env_path}")
 
     # Show database details
     print(f"\nRetrieving details for database: {db_name}")
@@ -296,11 +444,6 @@ def main():
     clipboard_handler = get_clipboard_handler()
     clipboard_handler(env_vars)
     print("Environment variables have been copied to clipboard.")
-
-    # Optionally save default database name to config
-    config = ConfigManager.load_config()
-    config['default_database_name'] = db_name
-    ConfigManager.save_config(config)
 
     print("\nMuch love xxx remcostoeten")
 

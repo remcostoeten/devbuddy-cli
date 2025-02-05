@@ -2,15 +2,39 @@
 
 A modern, scalable CLI toolbox for developers that helps streamline common development tasks. DevBuddy provides an interactive CLI experience with various utilities to speed up your development workflow.
 
+## Installation
+
+```bash
+npm install -g @devbuddy/cli
+# or
+pnpm add -g @devbuddy/cli
+```
+
+## Quick Start
+
+```bash
+# Run in interactive mode
+devbuddy
+
+# Run specific feature
+devbuddy <feature-name>
+```
+
 ## Features
 
 - 🎯 **Interactive Mode**: Run `devbuddy` for a guided experience through all available tools
 - 🚀 **Component Management**: Quickly scaffold and manage UI components
 - 📦 **Package Helper**: Streamlined Next.js package installation and setup
 - 🗄️ **Database Tools**: Turso database management and configuration
-- 🔧 **Extensible Architecture**: Easy to add new modules and commands
+- 🔧 **Extensible Architecture**: Easy to add new features and commands
 
-## Available Modules
+## Requirements
+
+- Node.js >= 18
+- Git (for some features)
+- Turso CLI (for database features)
+
+## Available Features
 
 ### 1. UI Component Manager
 - Generate new components with best practices
@@ -23,95 +47,101 @@ A modern, scalable CLI toolbox for developers that helps streamline common devel
 - Common package presets
 
 ### 3. Turso Database Manager
-- Create and manage Turso databases
-- Token management
-- Environment file updates
-- Credential backups
+Powerful database management for Turso, featuring:
+
+#### Features
+- 🚀 Database Operations
+  - Create new databases with automatic credential generation
+  - List and manage existing databases
+  - Delete databases with safety confirmations
+  - Set default databases for quick access
+  - Show detailed database information
+
+- 🔐 Credential Management
+  - Generate and store database URLs and auth tokens
+  - Automatic .env file management
+  - Secure credential backup
+  - Clipboard integration for quick access
+
+#### Usage
+```bash
+# Interactive mode
+devbuddy
+# Then select "Turso DB Manager"
+
+# Direct commands
+devbuddy db create          # Create a new database
+devbuddy db list           # List all databases
+devbuddy db show [name]    # Show database details
+devbuddy db delete [name]  # Delete a database
+devbuddy db --help         # Show help menu
+```
+
+#### Environment Management
+The tool manages these environment variables:
+- `DB_URL`: Database connection URL
+- `AUTH_TOKEN`: Authentication token
+- `TURSO_DB_NAME`: Database name
+
+#### Configuration
+- Stores settings in `~/.turso-db-config.json`
+- Manages default database preferences
+- Preserves database configurations
+- Automatic CLI installation and auth management
 
 ## Extending DevBuddy
 
-DevBuddy is designed to be modular. To create a new module:
+DevBuddy is designed to be modular. To create a new plugin:
 
-1. Add a new directory under `src/modules/`
-2. Create your module class extending the base Module class
-3. Implement required methods:
+1. Add a new file under `src/plugins/`
+2. Export your plugin object implementing the Plugin interface
+3. Implement required properties and action function:
    ```typescript
-   export class YourModule extends BaseModule {
-     public name = 'your-module';
-     public description = 'What your module does';
+   export const yourPlugin: Plugin = {
+     name: 'your-plugin',
+     description: 'What your plugin does',
+     category: 'Your Category',
      
-     async execute(): Promise<void> {
-       // Your module logic here
+     async action() {
+       // Your plugin logic here
      }
    }
    ```
-4. Register your module in `src/modules/index.ts`
+4. Register your plugin in `src/plugins/index.ts`
 
-For detailed development guidelines, check out our [contribution guide](CONTRIBUTING.md).
+### Plugin Structure
 
-## Basic Usage
+Each plugin should have:
+- `name`: Unique identifier
+- `description`: Clear explanation of functionality
+- `category`: Group for organization (optional)
+- `action`: Main function that runs when plugin is executed
 
-```bash
-npm install -g @devbuddy/cli
-# or
-pnpm add -g @devbuddy/cli
+### Example Plugin
 
-# Run in interactive mode
-devbuddy
+```typescript
+import { Plugin } from '../types/plugin'
+import { logger } from '../utils/logger'
 
-# Run specific module
-devbuddy <module-name>
+export const examplePlugin: Plugin = {
+  name: 'example',
+  description: 'An example plugin',
+  category: 'Examples',
+  
+  async action() {
+    logger.info('Hello from example plugin!')
+    // Add your plugin logic here
+  }
+}
 ```
 
-## Requirements
+### Best Practices
 
-- Node.js >= 18
-- Git (for some features)
-- Turso CLI (for database features)
-
-## Publishing
-
-### Prerequisites
-
-1. Create an npm account at https://www.npmjs.com/signup
-2. Create the `@devbuddy` organization/scope:
-   ```bash
-   npm org create devbuddy
-   ```
-   Or create it manually at https://www.npmjs.com/org/create
-
-3. Add yourself to the organization:
-   ```bash
-   npm org add @devbuddy <your-npm-username>
-   ```
-
-### Publishing Steps
-
-```bash
-# 1. Make sure you're authenticated with npm
-npm adduser     # If you've never logged in before
-# OR
-npm login       # If you already have an account
-
-# 2. Fix any package.json issues
-npm pkg fix     # Fixes common package.json errors
-
-# 3. Update version in package.json
-npm version patch   # for bug fixes
-npm version minor   # for new features
-npm version major   # for breaking changes
-
-# 4. Build the project
-npm run build
-
-# 5. Publish to npm
-npm publish --access public
-```
-
-Note: If you get scope-related errors:
-1. Make sure the `@devbuddy` organization exists on npm
-2. Verify you're a member of the organization (`npm org ls @devbuddy`)
-3. Ensure you have publish rights (`npm access ls-collaborators @devbuddy/cli`)
+- Keep plugins focused on a single responsibility
+- Use utility functions from `src/utils`
+- Add proper error handling
+- Include helpful logging
+- Document your plugin's usage
 
 ## Contributing
 
@@ -124,3 +154,22 @@ Note: If you get scope-related errors:
 ## License
 
 MIT
+
+## Acknowledgments
+
+- [Turso](https://turso.tech/) - For their excellent database service
+- [Inquirer.js](https://github.com/SBoudrias/Inquirer.js/) - For the interactive CLI interface
+- [Chalk](https://github.com/chalk/chalk) - For beautiful terminal styling
+
+# Turso Database Scripts
+
+This collection of scripts helps manage and interact with Turso databases across different projects. It provides tools for both local development and production database management.
+
+## Features
+
+- Database creation and management
+- Connection string handling
+- Cross-platform support
+- Multiple language implementations (Python, etc.)
+
+## Structure

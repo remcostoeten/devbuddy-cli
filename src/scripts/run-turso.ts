@@ -1,8 +1,8 @@
-import { logger } from '../../utils/logger.js'
 import { execa } from 'execa'
 import { platform } from 'os'
 import * as readline from 'readline'
 import chalk from 'chalk'
+import { logger } from '@/utils/logger'
 
 const rl = readline.createInterface({
   input: process.stdin,
@@ -57,8 +57,12 @@ async function installTurso(osType: string | null): Promise<boolean> {
     logger.info('\nPlease authenticate with Turso by running:')
     logger.info(chalk.cyan('turso auth signup'))
     return true
-  } catch (error) {
-    logger.error(chalk.red(`\n❌ Failed to install Turso CLI: ${error.message}`))
+  } catch (error: unknown) {
+    if (error instanceof Error) {
+      logger.error(chalk.red(`\n❌ Failed to install Turso CLI: ${error.message}`))
+    } else {
+      logger.error(chalk.red('\n❌ Failed to install Turso CLI'))
+    }
     return false
   }
 }
