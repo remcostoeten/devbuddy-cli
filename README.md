@@ -1,5 +1,7 @@
 # DevBuddy CLI
-
+> [!NOTE]  
+> Far from done, alot of individual tools need too be migrated over.
+> 
 A modern, scalable CLI toolbox for developers that helps streamline common development tasks. DevBuddy provides an interactive CLI experience with various utilities to speed up your development workflow.
 
 ## Installation
